@@ -6,9 +6,8 @@ require('dotenv').config();
 
 const app = express();
 
-// Enable CORS for your React app origin or for all origins
 app.use(cors({
-  origin: 'http://localhost:5173',  // your React dev server URL
+  origin: 'http://localhost:5173',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
@@ -17,9 +16,9 @@ app.use(express.json());
 
 const VAULT_ADDR = process.env.VAULT_ADDR;  
 const VAULT_TOKEN = process.env.VAULT_TOKEN;  
-const SECRET_PATH = 'jwt-tokens';
+const SECRET_PATH = 'jwt-tokens';  // Base path in Vault
 
-const users = { padmanaban: 'password123' };  
+const users = { padmanaban: 'password123' };
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
@@ -31,15 +30,18 @@ app.post('/login', async (req, res) => {
   const token = jwt.sign({ username }, 'your_jwt_secret', { expiresIn: '1h' });
 
   try {
-    // Store in Vault
+    // Vault KV v2 requires the path: /v1/<mount>/data/<secret>
+    const vaultPath = `${VAULT_ADDR}/v1/${SECRET_PATH}/data/${username}`;
+
     await axios.post(
-      `${VAULT_ADDR}/v1/${SECRET_PATH}/${username}`,
+      vaultPath,
       { data: { token } },
       { headers: { 'X-Vault-Token': VAULT_TOKEN } }
     );
 
-    res.json({ message: 'Login successful' });  // No token sent to client
+    res.json({ message: 'Login successful' });
   } catch (err) {
+    console.error('Vault error:', err.response?.data || err.message);
     res.status(500).json({ error: 'Vault storage failed', details: err.message });
   }
 });
