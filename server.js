@@ -1,11 +1,18 @@
-
-
+const cors = require('cors');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
+
+// Enable CORS for your React app origin or for all origins
+app.use(cors({
+  origin: 'http://localhost:5173',  // your React dev server URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 const VAULT_ADDR = process.env.VAULT_ADDR;  
@@ -37,4 +44,5 @@ app.post('/login', async (req, res) => {
   }
 });
 
-app.listen(3001, () => console.log('API running on port 3001'));
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`API running on port ${PORT}`));
